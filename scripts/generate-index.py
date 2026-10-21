@@ -7,9 +7,6 @@ Generates legacy Tachiyomi extension repository metadata files:
 - index.min.json (minified single-line JSON array)
 - repo.json (repository metadata for Tachiyomi 0.15.2+ and forks)
 - Extracts extension icons to icon/{pkg}.png
-
-Usage:
-    python scripts/generate-index.py --apk-dir repo/apk --output-dir repo --inspector-json output.json
 """
 
 import os
@@ -20,6 +17,7 @@ import zipfile
 import re
 import argparse
 import subprocess
+import traceback
 from pathlib import Path
 
 
@@ -86,6 +84,8 @@ def extract_metadata_aapt(aapt_path, apk_path):
         if name.startswith("Tachiyomi: "):
             name = name[len("Tachiyomi: "):]
         meta["name"] = name
+    else:
+        meta["name"] = apk_path.stem
 
     # NSFW meta-data
     nsfw_match = re.search(r"meta-data:\s+name='tachiyomi\.extension\.nsfw'\s+value='([^']+)'", output)
@@ -99,7 +99,7 @@ def extract_metadata_aapt(aapt_path, apk_path):
     if class_match:
         meta["class"] = class_match.group(1)
 
-    # Icon path in APK: application-icon-640:'...' or application-icon-320:'...' or icon='...'
+    # Icon path in APK
     icon_matches = re.findall(r"application-icon-\d+:\s*'([^']+)'", output)
     if icon_matches:
         meta["icon_path"] = icon_matches[-1]
@@ -114,7 +114,6 @@ def extract_metadata_aapt(aapt_path, apk_path):
 def extract_metadata_fallback(apk_path):
     """Fallback metadata extractor using filename convention."""
     filename = apk_path.name
-    # Strip suffixes like -release.apk or -release-unsigned.apk
     clean_stem = re.sub(r"-release(-unsigned)?$", "", apk_path.stem)
     match = re.match(r"^tachiyomi-([a-zA-Z0-9_\-]+)\.([a-zA-Z0-9_\-]+)-v([0-9\.]+)$", clean_stem)
     meta = {}
@@ -145,14 +144,12 @@ def extract_icon(apk_path, icon_in_apk, output_icon_path):
                 with open(output_icon_path, "wb") as out:
                     out.write(z.read(icon_in_apk))
                 return True
-            # Search for best mipmap icon
             candidates = [n for n in z.namelist() if "ic_launcher" in n and n.endswith(".png")]
             if candidates:
                 candidates.sort(key=lambda x: ("xxxhdpi" in x, "xxhdpi" in x, "xhdpi" in x, "hdpi" in x), reverse=True)
                 with open(output_icon_path, "wb") as out:
                     out.write(z.read(candidates[0]))
                 return True
-            # Search any png/webp in res
             fallback_images = [n for n in z.namelist() if n.startswith("res/") and (n.endswith(".png") or n.endswith(".webp"))]
             if fallback_images:
                 with open(output_icon_path, "wb") as out:
@@ -166,7 +163,6 @@ def extract_icon(apk_path, icon_in_apk, output_icon_path):
 def normalize_apk_name(apk_path):
     """Normalizes an APK file name by stripping '-release*' suffixes."""
     filename = apk_path.name
-    # Replace -release.apk, -release-unsigned.apk with .apk
     clean_name = re.sub(r"-release(-unsigned)?\.apk$", ".apk", filename)
     if clean_name != filename:
         target = apk_path.parent / clean_name
@@ -178,150 +174,135 @@ def normalize_apk_name(apk_path):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Generate legacy Tachiyomi extension repository indexes")
-    parser.add_argument("--apk-dir", default="repo/apk", help="Directory where APKs are located")
-    parser.add_argument("--output-dir", default="repo", help="Output directory for index.json and index.min.json")
-    parser.add_argument("--icon-dir", default="repo/icon", help="Directory where icons should be saved")
-    parser.add_argument("--inspector-json", default="", help="Path to output.json from Inspector.jar")
-    parser.add_argument("--repo-name", default="03DxD12 Legacy Tachiyomi Extensions", help="Repo display name")
-    parser.add_argument("--repo-short-name", default="03DxD12", help="Repo short name")
-    parser.add_argument("--repo-website", default="https://github.com/03DxD12/tachiyomi-extensions", help="Repo website")
-    parser.add_argument("--signing-fingerprint", default="", help="Signing key SHA-256 fingerprint")
+    try:
+        parser = argparse.ArgumentParser(description="Generate legacy Tachiyomi extension repository indexes")
+        parser.add_argument("--apk-dir", default="repo/apk", help="Directory where APKs are located")
+        parser.add_argument("--output-dir", default="repo", help="Output directory for index.json and index.min.json")
+        parser.add_argument("--icon-dir", default="repo/icon", help="Directory where icons should be saved")
+        parser.add_argument("--inspector-json", default="", help="Path to output.json from Inspector.jar")
+        parser.add_argument("--repo-name", default="03DxD12 Legacy Tachiyomi Extensions", help="Repo display name")
+        parser.add_argument("--repo-short-name", default="03DxD12", help="Repo short name")
+        parser.add_argument("--repo-website", default="https://github.com/03DxD12/tachiyomi-extensions", help="Repo website")
+        parser.add_argument("--signing-fingerprint", default="", help="Signing key SHA-256 fingerprint")
 
-    args = parser.parse_args()
+        args = parser.parse_args()
 
-    apk_dir = Path(args.apk_dir)
-    output_dir = Path(args.output_dir)
-    icon_dir = Path(args.icon_dir)
+        apk_dir = Path(args.apk_dir)
+        output_dir = Path(args.output_dir)
+        icon_dir = Path(args.icon_dir)
 
-    output_dir.mkdir(parents=True, exist_ok=True)
-    icon_dir.mkdir(parents=True, exist_ok=True)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        icon_dir.mkdir(parents=True, exist_ok=True)
 
-    if not apk_dir.exists():
-        print(f"Error: APK directory '{apk_dir}' does not exist.", file=sys.stderr)
-        sys.exit(1)
+        if not apk_dir.exists():
+            print(f"Error: APK directory '{apk_dir}' does not exist.", file=sys.stderr)
+            sys.exit(1)
 
-    # Normalize APK filenames first
-    current_apks = list(apk_dir.glob("*.apk"))
-    apk_files = []
-    for apk in current_apks:
-        norm = normalize_apk_name(apk)
-        apk_files.append(norm)
-    apk_files.sort()
+        current_apks = list(apk_dir.glob("*.apk"))
+        apk_files = []
+        for apk in current_apks:
+            norm = normalize_apk_name(apk)
+            apk_files.append(norm)
+        apk_files.sort()
 
-    if not apk_files:
-        print(f"Warning: No .apk files found in '{apk_dir}'.", file=sys.stderr)
+        print(f"Processing {len(apk_files)} APKs in '{apk_dir}'...")
 
-    # Load Inspector JSON if provided
-    inspector_data = {}
-    if args.inspector_json and os.path.isfile(args.inspector_json) and os.path.getsize(args.inspector_json) > 0:
-        try:
-            with open(args.inspector_json, "r", encoding="utf-8") as f:
-                inspector_data = json.load(f)
-            print(f"Loaded inspector data for {len(inspector_data)} packages from {args.inspector_json}")
-        except Exception as e:
-            print(f"Notice: Could not parse inspector JSON ({e}), proceeding with fallback source computation.", file=sys.stderr)
-
-    aapt_path = find_aapt()
-    if aapt_path:
-        print(f"Using aapt at: {aapt_path}")
-    else:
-        print("Notice: aapt not found in PATH or ANDROID_HOME. Using fallback metadata extraction.")
-
-    extensions = []
-
-    for apk in apk_files:
-        meta = None
-        if aapt_path:
+        inspector_data = {}
+        if args.inspector_json and os.path.isfile(args.inspector_json) and os.path.getsize(args.inspector_json) > 0:
             try:
-                meta = extract_metadata_aapt(aapt_path, apk)
+                with open(args.inspector_json, "r", encoding="utf-8") as f:
+                    inspector_data = json.load(f)
+                print(f"Loaded inspector data for {len(inspector_data)} packages.")
             except Exception as e:
-                print(f"Notice: aapt parsing exception on {apk.name}: {e}, falling back.")
-                meta = None
+                print(f"Notice: Failed to load inspector JSON ({e}), continuing with defaults.")
 
-        if not meta or not meta.get("pkg"):
-            meta = extract_metadata_fallback(apk)
+        aapt_path = find_aapt()
+        if aapt_path:
+            print(f"Using aapt: {aapt_path}")
 
-        pkg_name = meta.get("pkg")
-        if not pkg_name:
-            print(f"Skipping {apk.name}: Could not determine package name.")
-            continue
+        extensions = []
 
-        # Language determination
-        lang_match = re.search(r"^tachiyomi-([a-zA-Z0-9_\-]+)\.", apk.name)
-        lang = lang_match.group(1) if lang_match else meta.get("lang", "en")
+        for apk in apk_files:
+            meta = None
+            if aapt_path:
+                try:
+                    meta = extract_metadata_aapt(aapt_path, apk)
+                except Exception as e:
+                    print(f"Notice: aapt extraction exception on {apk.name}: {e}")
+                    meta = None
 
-        # Extract icon
-        icon_path = icon_dir / f"{pkg_name}.png"
-        extract_icon(apk, meta.get("icon_path"), icon_path)
+            if not meta or not meta.get("pkg"):
+                meta = extract_metadata_fallback(apk)
 
-        # Sources determination
-        sources = []
-        if pkg_name in inspector_data and isinstance(inspector_data[pkg_name], list):
-            sources = inspector_data[pkg_name]
-            if len(sources) == 1 and "lang" in sources[0]:
-                src_lang = sources[0]["lang"]
-                if src_lang not in ("all", "other") and lang not in ("all", "other"):
-                    lang = src_lang
-        else:
-            # Deterministic source ID based on package and name
-            source_id = str(abs(hash(pkg_name + meta["name"])) % (10**18))
-            sources.append({
-                "name": meta["name"],
+            pkg_name = str(meta.get("pkg") or f"eu.kanade.tachiyomi.extension.{apk.stem}")
+            ext_name = str(meta.get("name") or apk.stem)
+            version_str = str(meta.get("version") or "1.4.1")
+            version_code = safe_int(meta.get("code", 1), default=1)
+            nsfw_val = safe_int(meta.get("nsfw", 0), default=0)
+
+            lang_match = re.search(r"^tachiyomi-([a-zA-Z0-9_\-]+)\.", apk.name)
+            lang = lang_match.group(1) if lang_match else str(meta.get("lang", "en"))
+
+            icon_path = icon_dir / f"{pkg_name}.png"
+            extract_icon(apk, meta.get("icon_path"), icon_path)
+
+            sources = []
+            if pkg_name in inspector_data and isinstance(inspector_data[pkg_name], list):
+                sources = inspector_data[pkg_name]
+                if len(sources) == 1 and isinstance(sources[0], dict) and "lang" in sources[0]:
+                    src_lang = sources[0]["lang"]
+                    if src_lang not in ("all", "other") and lang not in ("all", "other"):
+                        lang = src_lang
+            else:
+                source_id = str(abs(hash(pkg_name + ext_name)) % (10**18))
+                sources.append({
+                    "name": ext_name,
+                    "lang": lang,
+                    "id": source_id,
+                    "baseUrl": "",
+                    "versionId": 1,
+                    "hasCloudflare": 0
+                })
+
+            entry = {
+                "name": ext_name,
+                "pkg": pkg_name,
+                "apk": apk.name,
                 "lang": lang,
-                "id": source_id,
-                "baseUrl": "",
-                "versionId": 1,
-                "hasCloudflare": 0
-            })
+                "code": version_code,
+                "version": version_str,
+                "nsfw": nsfw_val,
+                "sources": sources
+            }
+            extensions.append(entry)
+            print(f"Indexed: {entry['name']} ({entry['pkg']}) v{entry['version']}")
 
-        entry = {
-            "name": meta.get("name", apk.stem),
-            "pkg": pkg_name,
-            "apk": apk.name,
-            "lang": lang,
-            "code": safe_int(meta.get("code", 1), default=1),
-            "version": meta.get("version", "1.4.1"),
-            "nsfw": safe_int(meta.get("nsfw", 0), default=0),
-            "sources": sources
+        extensions.sort(key=lambda x: (x.get("lang") != "en", str(x.get("name", "")).lower()))
+
+        index_json_path = output_dir / "index.json"
+        with open(index_json_path, "w", encoding="utf-8") as f:
+            json.dump(extensions, f, indent=2, ensure_ascii=False)
+            f.write("\n")
+
+        index_min_json_path = output_dir / "index.min.json"
+        with open(index_min_json_path, "w", encoding="utf-8") as f:
+            json.dump(extensions, f, separators=(",", ":"), ensure_ascii=False)
+
+        repo_json_path = output_dir / "repo.json"
+        repo_data = {
+            "meta": {
+                "name": args.repo_name,
+                "shortName": args.repo_short_name,
+                "website": args.repo_website,
+                "signingKeyFingerprint": args.signing_fingerprint
+            }
         }
-        extensions.append(entry)
-        print(f"Indexed: {entry['name']} ({entry['pkg']}) v{entry['version']} [lang: {entry['lang']}]")
+        with open(repo_json_path, "w", encoding="utf-8") as f:
+            json.dump(repo_data, f, indent=2, ensure_ascii=False)
+            f.write("\n")
 
-    # Sort extensions alphabetically
-    extensions.sort(key=lambda x: (x["lang"] != "en", x["name"].lower()))
-
-    # Write index.json (pretty)
-    index_json_path = output_dir / "index.json"
-    with open(index_json_path, "w", encoding="utf-8") as f:
-        json.dump(extensions, f, indent=2, ensure_ascii=False)
-        f.write("\n")
-    print(f"Generated: {index_json_path} ({len(extensions)} extensions)")
-
-    # Write index.min.json (minified)
-    index_min_json_path = output_dir / "index.min.json"
-    with open(index_min_json_path, "w", encoding="utf-8") as f:
-        json.dump(extensions, f, separators=(",", ":"), ensure_ascii=False)
-    print(f"Generated: {index_min_json_path}")
-
-    # Write repo.json (metadata)
-    repo_json_path = output_dir / "repo.json"
-    repo_data = {
-        "meta": {
-            "name": args.repo_name,
-            "shortName": args.repo_short_name,
-            "website": args.repo_website,
-            "signingKeyFingerprint": args.signing_fingerprint
-        }
-    }
-    with open(repo_json_path, "w", encoding="utf-8") as f:
-        json.dump(repo_data, f, indent=2, ensure_ascii=False)
-        f.write("\n")
-    print(f"Generated: {repo_json_path}")
-
-    # Write README.md in repo directory
-    repo_readme_path = output_dir / "README.md"
-    readme_content = f"""# 03DxD12 Legacy Tachiyomi Extension Repository
+        repo_readme_path = output_dir / "README.md"
+        readme_content = f"""# 03DxD12 Legacy Tachiyomi Extension Repository
 
 This repository provides manga extensions compatible with legacy **Tachiyomi** (v0.15.2+, v0.14.x) and compatible forks that require the `index.min.json` repository index format.
 
@@ -333,29 +314,24 @@ To add this repository to your Tachiyomi app:
 https://raw.githubusercontent.com/03DxD12/tachiyomi-extensions/repo/index.min.json
 ```
 
-### How to Add:
-1. Open **Tachiyomi**.
-2. Go to **More** -> **Settings** -> **Browse** -> **Extension repos**.
-3. Tap **Add repository** (+).
-4. Paste the URL:
-   `https://raw.githubusercontent.com/03DxD12/tachiyomi-extensions/repo/index.min.json`
-5. Tap **Add**.
-6. Go back to the **Browse** -> **Extensions** tab and pull down to refresh.
-
----
-
 ### Available Extensions ({len(extensions)})
 
 | Name | Package | Language | Version | NSFW |
 |---|---|---|---|---|
 """
-    for ext in extensions:
-        nsfw_tag = "🔞 Yes" if ext["nsfw"] == 1 else "No"
-        readme_content += f"| {ext['name']} | `{ext['pkg']}` | {ext['lang']} | {ext['version']} | {nsfw_tag} |\n"
+        for ext in extensions:
+            nsfw_tag = "🔞 Yes" if ext["nsfw"] == 1 else "No"
+            readme_content += f"| {ext['name']} | `{ext['pkg']}` | {ext['lang']} | {ext['version']} | {nsfw_tag} |\n"
 
-    with open(repo_readme_path, "w", encoding="utf-8") as f:
-        f.write(readme_content)
-    print(f"Generated: {repo_readme_path}")
+        with open(repo_readme_path, "w", encoding="utf-8") as f:
+            f.write(readme_content)
+
+        print(f"SUCCESS: Generated index files for {len(extensions)} extensions in '{output_dir}'.")
+
+    except Exception:
+        print("FATAL ERROR in generate-index.py:", file=sys.stderr)
+        traceback.print_exc(file=sys.stderr)
+        sys.exit(1)
 
 
 if __name__ == "__main__":

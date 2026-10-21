@@ -72,9 +72,8 @@ jobs:
         run: |
           mkdir -p repo/apk
           mkdir -p repo/icon
-          find . -name "*release*.apk" -type f -exec cp -v {} repo/apk/ \; || true
-          find src -name "*.apk" -type f -exec cp -v {} repo/apk/ \; || true
-          echo "Found APKs:"
+          find src -path "*/build/outputs/apk/release/*.apk" -exec cp -v {} repo/apk/ \;
+          echo "Collected APKs:"
           ls -la repo/apk/
 
       - name: Inspect APKs with Inspector
