@@ -1,0 +1,10 @@
+ext {
+    extName = 'MangaBat'
+    pkgNameSuffix = 'en.mangabat'
+    extClass = '.Mangabat'
+    extVersionCode = 8
+    libVersion = '1.4'
+    isNsfw = false
+}
+
+apply from: "$rootDir/common.gradle"

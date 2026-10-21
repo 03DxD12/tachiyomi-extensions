@@ -45,6 +45,7 @@ def clean_extension_name(slug):
     lower = slug.lower()
     known = {
         "mangakakalot": "MangaKakalot",
+        "mangabat": "MangaBat",
         "mangafox": "MangaFox",
         "mangahere": "MangaHere",
         "mangadex": "MangaDex",
@@ -53,6 +54,7 @@ def clean_extension_name(slug):
         "mangahub": "MangaHub",
         "webtoons": "Webtoons",
         "batoto": "Bato.to",
+        "asurascans": "Asura Scans",
         "comick": "Comick",
         "comickfun": "Comick"
     }
