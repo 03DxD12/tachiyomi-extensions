@@ -66,13 +66,8 @@ jobs:
           ALIAS: ${{ secrets.ALIAS || 'tachiyomi' }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || 'tachiyomi' }}
         run: |
-          if ! ./gradlew assembleRelease --stacktrace 2>&1 | tee gradle-build.log; then
-            echo "## Gradle Build Failure" >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            tail -n 100 gradle-build.log >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            exit 1
-          fi
+          set -o pipefail
+          ./gradlew assembleRelease --stacktrace 2>&1 | tee gradle-build.log
 
       - name: Collect APK Files
         run: |
@@ -81,6 +76,10 @@ jobs:
           find src -path "*/build/outputs/apk/release/*.apk" -exec cp -v {} repo/apk/ \;
           echo "Collected APKs:"
           ls -la repo/apk/
+          if [ -z "$(ls -A repo/apk)" ]; then
+            echo "Error: No APK files found in repo/apk/ after assembleRelease!" >&2
+            exit 1
+          fi
 
       - name: Inspect APKs with Inspector
         continue-on-error: true
@@ -108,7 +107,7 @@ jobs:
           echo "=== index.min.json preview ==="
           cat repo/index.min.json
           echo ""
-          python -c "import json; data=json.load(open('repo/index.min.json')); print(f'Successfully validated {len(data)} extensions in index.min.json')"
+          python -c "import json; data=json.load(open('repo/index.min.json')); assert len(data) > 0, 'No extensions in index.min.json!'; print(f'Successfully validated {len(data)} extensions in index.min.json')"
 
       - name: Deploy to 'repo' Branch
         uses: JamesIves/github-pages-deploy-action@v4

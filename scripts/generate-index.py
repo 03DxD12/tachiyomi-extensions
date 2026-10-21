@@ -316,6 +316,10 @@ def main():
             apk_files.append(norm)
         apk_files.sort()
 
+        if len(apk_files) == 0:
+            print(f"Error: No APK files found in '{apk_dir}'. Aborting index generation to prevent publishing empty repository.", file=sys.stderr)
+            sys.exit(1)
+
         print(f"Processing {len(apk_files)} APKs in '{apk_dir}'...")
 
         inspector_data = {}

@@ -148,6 +148,8 @@ class BatoTo : ParsedHttpSource() {
         return list
     }
 
+    override fun chapterListSelector(): String = throw UnsupportedOperationException("Not used")
+
     override fun chapterFromElement(element: Element): SChapter = throw UnsupportedOperationException("Not used")
 
     // =============================== Pages ===============================
