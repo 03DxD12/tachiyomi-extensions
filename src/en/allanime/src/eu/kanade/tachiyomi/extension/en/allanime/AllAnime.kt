@@ -11,6 +11,7 @@ import eu.kanade.tachiyomi.extension.en.allanime.AllAnimeHelper.parseAs
 import eu.kanade.tachiyomi.extension.en.allanime.AllAnimeHelper.toJsonRequestBody
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.network.asObservableSuccess
+import eu.kanade.tachiyomi.network.interceptor.rateLimit
 import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
@@ -185,7 +186,7 @@ class AllAnime : ConfigurableSource, HttpSource() {
     override fun fetchChapterList(manga: SManga): Observable<List<SChapter>> {
         return client.newCall(chapterListRequest(manga))
             .asObservableSuccess()
-            .map { response ->
+            .map { response: Response ->
                 chapterListParse(response, manga)
             }
     }

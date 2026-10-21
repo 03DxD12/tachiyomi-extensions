@@ -172,7 +172,7 @@ class Webtoons : ParsedHttpSource() {
 
         return client.newCall(GET(url.toString(), mobileHeaders))
             .asObservableSuccess()
-            .map { response ->
+            .map { response: Response ->
                 chapterListParse(response)
             }
     }
