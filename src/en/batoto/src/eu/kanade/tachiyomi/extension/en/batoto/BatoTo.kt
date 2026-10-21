@@ -121,7 +121,8 @@ class BatoTo : ParsedHttpSource() {
     }
 
     override fun chapterListParse(response: Response): List<SChapter> {
-        val json = response.body.string()
+        val json = response.body?.string().orEmpty()
+        if (json.isEmpty()) return emptyList()
         val jsonObject = JSONObject(json)
         val data = jsonObject.optJSONArray("data") ?: return emptyList()
         val slug = response.request.url.queryParameter("slug") ?: ""
@@ -154,8 +155,7 @@ class BatoTo : ParsedHttpSource() {
     override fun pageListParse(document: Document): List<Page> {
         val elements = document.select(".pages .page:not(.notice-page) img, .reader-pages img")
         val pages = ArrayList<Page>()
-        for (i in 0 until elements.size) {
-            val img = elements[i]
+        for (img in elements) {
             val data = img.attr("abs:data-src").ifEmpty { img.attr("abs:data-fallback") }.ifEmpty { img.attr("abs:src") }
             if (data.isNotBlank() && !data.endsWith(".gif") && !data.contains("notice")) {
                 pages.add(Page(pages.size, document.location(), data))
