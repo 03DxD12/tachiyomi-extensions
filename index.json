@@ -1,5 +1,24 @@
 [
   {
+    "name": "MangaBat",
+    "pkg": "eu.kanade.tachiyomi.extension.en.mangabat",
+    "apk": "tachiyomi-en.mangabat-v1.4.8.apk",
+    "lang": "en",
+    "code": 8,
+    "version": "1.4.8",
+    "nsfw": 0,
+    "sources": [
+      {
+        "name": "MangaBat",
+        "lang": "en",
+        "id": "538790550529511901",
+        "baseUrl": "",
+        "versionId": 1,
+        "hasCloudflare": 0
+      }
+    ]
+  },
+  {
     "name": "MangaFox",
     "pkg": "eu.kanade.tachiyomi.extension.en.mangafox",
     "apk": "tachiyomi-en.mangafox-v1.4.18.apk",
@@ -11,7 +30,7 @@
       {
         "name": "MangaFox",
         "lang": "en",
-        "id": "210382646262911448",
+        "id": "930974614600797424",
         "baseUrl": "",
         "versionId": 1,
         "hasCloudflare": 0
@@ -30,7 +49,7 @@
       {
         "name": "MangaHere",
         "lang": "en",
-        "id": "94326623335829749",
+        "id": "686740835900913737",
         "baseUrl": "",
         "versionId": 1,
         "hasCloudflare": 0
@@ -49,7 +68,7 @@
       {
         "name": "MangaKakalot",
         "lang": "en",
-        "id": "779935320562364186",
+        "id": "74184662398196030",
         "baseUrl": "",
         "versionId": 1,
         "hasCloudflare": 0
