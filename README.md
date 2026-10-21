@@ -10,9 +10,10 @@ To add this repository to your Tachiyomi app:
 https://raw.githubusercontent.com/03DxD12/tachiyomi-extensions/repo/index.min.json
 ```
 
-### Available Extensions (2)
+### Available Extensions (3)
 
 | Name | Package | Language | Version | NSFW |
 |---|---|---|---|---|
-| tachiyomi-en.mangafox-v1.4.18 | `eu.kanade.tachiyomi.extension.en.mangafox` | en | 1.4.18 | No |
-| tachiyomi-en.mangahere-v1.4.19 | `eu.kanade.tachiyomi.extension.en.mangahere` | en | 1.4.19 | No |
+| MangaFox | `eu.kanade.tachiyomi.extension.en.mangafox` | en | 1.4.18 | No |
+| MangaHere | `eu.kanade.tachiyomi.extension.en.mangahere` | en | 1.4.19 | No |
+| MangaKakalot | `eu.kanade.tachiyomi.extension.en.mangakakalot` | en | 1.4.15 | No |
