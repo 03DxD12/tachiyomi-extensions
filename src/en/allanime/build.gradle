@@ -1,0 +1,10 @@
+ext {
+    extName = 'AllAnime'
+    pkgNameSuffix = 'en.allanime'
+    extClass = '.AllAnime'
+    extVersionCode = 6
+    libVersion = '1.4'
+    isNsfw = false
+}
+
+apply from: "$rootDir/common.gradle"

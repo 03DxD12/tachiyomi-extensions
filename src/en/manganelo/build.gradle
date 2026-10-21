@@ -1,0 +1,10 @@
+ext {
+    extName = 'MangaNato'
+    pkgNameSuffix = 'en.manganelo'
+    extClass = '.Manganato'
+    extVersionCode = 26
+    libVersion = '1.4'
+    isNsfw = false
+}
+
+apply from: "$rootDir/common.gradle"

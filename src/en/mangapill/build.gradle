@@ -1,0 +1,10 @@
+ext {
+    extName = 'MangaPill'
+    pkgNameSuffix = 'en.mangapill'
+    extClass = '.MangaPill'
+    extVersionCode = 2
+    libVersion = '1.4'
+    isNsfw = false
+}
+
+apply from: "$rootDir/common.gradle"

@@ -1,0 +1,10 @@
+ext {
+    extName = 'Webtoons.com'
+    pkgNameSuffix = 'en.webtoons'
+    extClass = '.Webtoons'
+    extVersionCode = 16
+    libVersion = '1.4'
+    isNsfw = false
+}
+
+apply from: "$rootDir/common.gradle"
