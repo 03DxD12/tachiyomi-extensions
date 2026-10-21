@@ -40,6 +40,25 @@ def safe_int(val, default=0):
         return default
 
 
+def clean_extension_name(slug):
+    """Converts extension package slug into standard display name."""
+    lower = slug.lower()
+    known = {
+        "mangakakalot": "MangaKakalot",
+        "mangafox": "MangaFox",
+        "mangahere": "MangaHere",
+        "mangadex": "MangaDex",
+        "mangapark": "MangaPark",
+        "mangareader": "MangaReader",
+        "mangahub": "MangaHub",
+        "webtoons": "Webtoons",
+        "batoto": "Bato.to",
+        "comick": "Comick",
+        "comickfun": "Comick"
+    }
+    return known.get(lower, slug.capitalize())
+
+
 def find_aapt():
     """Find aapt or aapt2 from PATH or ANDROID_HOME."""
     aapt_cmd = shutil.which("aapt")
@@ -69,42 +88,42 @@ def extract_metadata_aapt(aapt_path, apk_path):
     meta = {}
 
     # Package info: package: name='...' versionCode='...' versionName='...'
-    pkg_match = re.search(r"package:\s+name='([^']+)'\s+versionCode='([^']+)'\s+versionName='([^']+)'", output)
+    pkg_match = re.search(r"package:\s+name=['\"]([^'\"]+)['\"]\s+versionCode=['\"]([^'\"]+)['\"]\s+versionName=['\"]([^'\"]+)['\"]", output)
     if pkg_match:
         meta["pkg"] = pkg_match.group(1)
         meta["code"] = safe_int(pkg_match.group(2), default=1)
         meta["version"] = pkg_match.group(3)
 
     # Label: application-label:'...' or application: label='...'
-    label_match = re.search(r"application-label(?:-[a-zA-Z]+)?:\s*'([^']+)'", output)
+    label_match = re.search(r"application-label(?:-[a-zA-Z]+)?:\s*['\"]([^'\"]+)['\"]", output)
     if not label_match:
-        label_match = re.search(r"application:\s+label='([^']+)'", output)
+        label_match = re.search(r"application:\s+.*label=['\"]([^'\"]+)['\"]", output)
     if label_match:
         name = label_match.group(1)
         if name.startswith("Tachiyomi: "):
             name = name[len("Tachiyomi: "):]
         meta["name"] = name
     else:
-        meta["name"] = apk_path.stem
+        meta["name"] = None
 
     # NSFW meta-data
-    nsfw_match = re.search(r"meta-data:\s+name='tachiyomi\.extension\.nsfw'\s+value='([^']+)'", output)
+    nsfw_match = re.search(r"meta-data:\s+name=['\"]tachiyomi\.extension\.nsfw['\"]\s+value=['\"]([^'\"]+)['\"]", output)
     if nsfw_match:
         meta["nsfw"] = safe_int(nsfw_match.group(1), default=0)
     else:
         meta["nsfw"] = 0
 
     # Extension class
-    class_match = re.search(r"meta-data:\s+name='tachiyomi\.extension\.class'\s+value='([^']+)'", output)
+    class_match = re.search(r"meta-data:\s+name=['\"]tachiyomi\.extension\.class['\"]\s+value=['\"]([^'\"]+)['\"]", output)
     if class_match:
         meta["class"] = class_match.group(1)
 
     # Icon path in APK
-    icon_matches = re.findall(r"application-icon-\d+:\s*'([^']+)'", output)
+    icon_matches = re.findall(r"application-icon-\d+:\s*['\"]([^'\"]+)['\"]", output)
     if icon_matches:
         meta["icon_path"] = icon_matches[-1]
     else:
-        fallback_icon = re.search(r"application:\s+.*icon='([^']+)'", output)
+        fallback_icon = re.search(r"application:\s+.*icon=['\"]([^'\"]+)['\"]", output)
         if fallback_icon:
             meta["icon_path"] = fallback_icon.group(1)
 
@@ -113,7 +132,6 @@ def extract_metadata_aapt(aapt_path, apk_path):
 
 def extract_metadata_fallback(apk_path):
     """Fallback metadata extractor using filename convention."""
-    filename = apk_path.name
     clean_stem = re.sub(r"-release(-unsigned)?$", "", apk_path.stem)
     match = re.match(r"^tachiyomi-([a-zA-Z0-9_\-]+)\.([a-zA-Z0-9_\-]+)-v([0-9\.]+)$", clean_stem)
     meta = {}
@@ -123,10 +141,10 @@ def extract_metadata_fallback(apk_path):
         meta["version"] = match.group(3)
         parts = meta["version"].split(".")
         meta["code"] = safe_int(parts[-1], default=1)
-        meta["name"] = ext_slug.capitalize()
+        meta["name"] = clean_extension_name(ext_slug)
         meta["pkg"] = f"eu.kanade.tachiyomi.extension.{meta['lang']}.{ext_slug}"
     else:
-        meta["name"] = clean_stem
+        meta["name"] = clean_extension_name(clean_stem)
         meta["pkg"] = f"eu.kanade.tachiyomi.extension.{clean_stem}"
         meta["code"] = 1
         meta["version"] = "1.4.1"
@@ -235,7 +253,11 @@ def main():
                 meta = extract_metadata_fallback(apk)
 
             pkg_name = str(meta.get("pkg") or f"eu.kanade.tachiyomi.extension.{apk.stem}")
-            ext_name = str(meta.get("name") or apk.stem)
+            slug = pkg_name.split(".")[-1]
+            ext_name = meta.get("name")
+            if not ext_name or ext_name.startswith("tachiyomi-"):
+                ext_name = clean_extension_name(slug)
+
             version_str = str(meta.get("version") or "1.4.1")
             version_code = safe_int(meta.get("code", 1), default=1)
             nsfw_val = safe_int(meta.get("nsfw", 0), default=0)

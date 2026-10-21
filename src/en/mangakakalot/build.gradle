@@ -1,0 +1,10 @@
+ext {
+    extName = 'MangaKakalot'
+    pkgNameSuffix = 'en.mangakakalot'
+    extClass = '.Mangakakalot'
+    extVersionCode = 15
+    libVersion = '1.4'
+    isNsfw = false
+}
+
+apply from: "$rootDir/common.gradle"
