@@ -34,9 +34,6 @@ jobs:
           java-version: 17
           distribution: temurin
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
@@ -45,8 +42,13 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Accept Android SDK Licenses
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+
       - name: Prepare Keystore for Release
         run: |
+          chmod +x gradlew
           if [ -n "${{ secrets.SIGNING_KEY }}" ]; then
             echo "Using repository signing key secret..."
             echo "${{ secrets.SIGNING_KEY }}" | base64 -d > signingkey.jks
@@ -70,6 +72,7 @@ jobs:
         run: |
           mkdir -p repo/apk
           mkdir -p repo/icon
+          find . -name "*release*.apk" -type f -exec cp -v {} repo/apk/ \; || true
           find src -name "*.apk" -type f -exec cp -v {} repo/apk/ \; || true
           echo "Found APKs:"
           ls -la repo/apk/

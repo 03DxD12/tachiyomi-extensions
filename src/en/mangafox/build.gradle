@@ -1,0 +1,10 @@
+ext {
+    extName = 'MangaFox'
+    pkgNameSuffix = 'en.mangafox'
+    extClass = '.MangaFox'
+    extVersionCode = 18
+    libVersion = '1.4'
+    isNsfw = true
+}
+
+apply from: "$rootDir/common.gradle"

@@ -1,0 +1,10 @@
+ext {
+    extName = 'MangaHere'
+    pkgNameSuffix = 'en.mangahere'
+    extClass = '.Mangahere'
+    extVersionCode = 19
+    libVersion = '1.4'
+    isNsfw = true
+}
+
+apply from: "$rootDir/common.gradle"
