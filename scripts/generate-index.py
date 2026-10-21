@@ -295,6 +295,7 @@ def main():
         parser.add_argument("--repo-short-name", default="03DxD12", help="Repo short name")
         parser.add_argument("--repo-website", default="https://github.com/03DxD12/tachiyomi-extensions", help="Repo website")
         parser.add_argument("--signing-fingerprint", default="", help="Signing key SHA-256 fingerprint")
+        parser.add_argument("--curated-meta", default="repo/keiyoushi-curated.json", help="Path to curated metadata from sync-keiyoushi.py")
 
         args = parser.parse_args()
 
@@ -331,6 +332,15 @@ def main():
             except Exception as e:
                 print(f"Notice: Failed to load inspector JSON ({e}), continuing with defaults.")
 
+        curated_data = {}
+        if args.curated_meta and os.path.isfile(args.curated_meta) and os.path.getsize(args.curated_meta) > 0:
+            try:
+                with open(args.curated_meta, "r", encoding="utf-8") as f:
+                    curated_data = json.load(f)
+                print(f"Loaded curated metadata for {len(curated_data)} packages.")
+            except Exception as e:
+                print(f"Notice: Failed to load curated metadata ({e}).")
+
         aapt_path = find_aapt()
         if aapt_path:
             print(f"Using aapt: {aapt_path}")
@@ -362,32 +372,52 @@ def main():
             lang_match = re.search(r"^tachiyomi-([a-zA-Z0-9_\-]+)\.", apk.name)
             lang = lang_match.group(1) if lang_match else str(meta.get("lang", "en"))
 
-            icon_path = icon_dir / f"{pkg_name}.png"
-            extract_icon(apk, meta.get("icon_path"), icon_path)
-
             sources = []
-            if pkg_name in inspector_data and isinstance(inspector_data[pkg_name], list):
-                sources = inspector_data[pkg_name]
-                if len(sources) == 1 and isinstance(sources[0], dict) and "lang" in sources[0]:
-                    src_lang = sources[0]["lang"]
-                    if src_lang not in ("all", "other") and lang not in ("all", "other"):
-                        lang = src_lang
-                for s in sources:
-                    if not s.get("baseUrl") and pkg_name in KNOWN_SOURCES:
-                        known_src = next((k for k in KNOWN_SOURCES[pkg_name] if k.get("name") == s.get("name")), KNOWN_SOURCES[pkg_name][0])
-                        s["baseUrl"] = known_src.get("baseUrl", "")
-            elif pkg_name in KNOWN_SOURCES:
-                sources = [dict(s) for s in KNOWN_SOURCES[pkg_name]]
+            curated_entry = None
+            if pkg_name in curated_data:
+                curated_entry = curated_data[pkg_name]
             else:
-                source_id = generate_source_id(ext_name, lang, 1)
-                sources.append({
-                    "name": ext_name,
-                    "lang": lang,
-                    "id": source_id,
-                    "baseUrl": f"https://{slug}.com",
-                    "versionId": 1,
-                    "hasCloudflare": 0
-                })
+                for c_pkg, c_info in curated_data.items():
+                    if c_info.get("apk") == apk.name or c_pkg.split(".")[-1] == slug:
+                        curated_entry = c_info
+                        pkg_name = c_pkg
+                        break
+
+            if curated_entry:
+                ext_name = curated_entry.get("name", ext_name)
+                version_str = str(curated_entry.get("version", version_str))
+                version_code = safe_int(curated_entry.get("code", version_code), default=version_code)
+                nsfw_val = safe_int(curated_entry.get("nsfw", nsfw_val), default=nsfw_val)
+                if curated_entry.get("sources"):
+                    sources = [dict(s) for s in curated_entry.get("sources")]
+
+            icon_path = icon_dir / f"{pkg_name}.png"
+            if not icon_path.exists() or icon_path.stat().st_size == 0:
+                extract_icon(apk, meta.get("icon_path"), icon_path)
+
+            if not sources:
+                if pkg_name in inspector_data and isinstance(inspector_data[pkg_name], list):
+                    sources = inspector_data[pkg_name]
+                    if len(sources) == 1 and isinstance(sources[0], dict) and "lang" in sources[0]:
+                        src_lang = sources[0]["lang"]
+                        if src_lang not in ("all", "other") and lang not in ("all", "other"):
+                            lang = src_lang
+                    for s in sources:
+                        if not s.get("baseUrl") and pkg_name in KNOWN_SOURCES:
+                            known_src = next((k for k in KNOWN_SOURCES[pkg_name] if k.get("name") == s.get("name")), KNOWN_SOURCES[pkg_name][0])
+                            s["baseUrl"] = known_src.get("baseUrl", "")
+                elif pkg_name in KNOWN_SOURCES:
+                    sources = [dict(s) for s in KNOWN_SOURCES[pkg_name]]
+                else:
+                    source_id = generate_source_id(ext_name, lang, 1)
+                    sources.append({
+                        "name": ext_name,
+                        "lang": lang,
+                        "id": source_id,
+                        "baseUrl": f"https://{slug}.com",
+                        "versionId": 1,
+                        "hasCloudflare": 0
+                    })
 
             entry = {
                 "name": ext_name,

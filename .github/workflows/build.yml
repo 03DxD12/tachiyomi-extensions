@@ -81,6 +81,13 @@ jobs:
             exit 1
           fi
 
+      - name: Sync Curated Keiyoushi Extensions (Asura Scans, MangaDex, etc.)
+        run: |
+          python scripts/sync-keiyoushi.py \
+            --output-apk repo/apk \
+            --output-icon repo/icon \
+            --output-meta repo/keiyoushi-curated.json
+
       - name: Inspect APKs with Inspector
         continue-on-error: true
         run: |
@@ -97,10 +104,11 @@ jobs:
             --apk-dir repo/apk \
             --output-dir repo \
             --icon-dir repo/icon \
+            --curated-meta repo/keiyoushi-curated.json \
             --inspector-json output.json \
             --repo-name "03DxD12 Legacy Tachiyomi Extensions" \
             --repo-short-name "03DxD12" \
-            --repo-website "https://github.com/03DxD12/tachiyomi-extensions"
+            --repo-website "https://03dxd12.github.io/tachiyomi-extensions"
 
       - name: Validate Generated Metadata
         run: |
@@ -109,10 +117,19 @@ jobs:
           echo ""
           python -c "import json; data=json.load(open('repo/index.min.json')); assert len(data) > 0, 'No extensions in index.min.json!'; print(f'Successfully validated {len(data)} extensions in index.min.json')"
 
+      - name: Deploy Web Directory Site (HTML, CSS, JS)
+        run: |
+          cp -v site/index.html repo/
+          cp -v site/style.css repo/
+          cp -v site/app.js repo/
+          touch repo/.nojekyll
+          echo "Prepared web directory files in repo/:"
+          ls -la repo/
+
       - name: Deploy to 'repo' Branch
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           branch: repo
           folder: repo
           clean: true
-          commit-message: "Automated repo update [skip ci]"
+          commit-message: "Automated repo and web directory update [skip ci]"

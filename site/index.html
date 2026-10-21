@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>03DxD12 Extensions | Tachiyomi & Mihon Repository</title>
+  <meta name="description" content="Browse, search, and download manga, webtoon, and anime extensions for Tachiyomi, Mihon, and compatible forks.">
+  <meta name="theme-color" content="#0b0d13">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="03DxD12 Extensions Directory">
+  <meta property="og:description" content="Browse and download Tachiyomi & Mihon extensions with 1-click install.">
+  <meta property="og:type" content="website">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Background Glow Orbs -->
+  <div class="bg-glow bg-glow-1"></div>
+  <div class="bg-glow bg-glow-2"></div>
+
+  <!-- Header Navigation -->
+  <header class="site-header">
+    <div class="header-container">
+      <a href="#" class="brand-logo">
+        <div class="brand-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"></path>
+            <path d="M6 6h10"></path>
+            <path d="M6 10h10"></path>
+          </svg>
+        </div>
+        <span class="brand-text">03DxD12 <span>Extensions</span></span>
+      </a>
+
+      <div class="header-actions">
+        <button id="guideBtn" class="btn btn-secondary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M12 16v-4"></path>
+            <path d="M12 8h.01"></path>
+          </svg>
+          How to Add
+        </button>
+
+        <a href="https://github.com/03DxD12/tachiyomi-extensions" target="_blank" rel="noopener noreferrer" class="btn btn-icon" title="View GitHub Repository" id="githubLink">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="hero-container">
+      <div class="hero-badge">
+        <span class="badge-dot"></span>
+        Tachiyomi v0.14+ & Mihon Compatible
+      </div>
+
+      <h1 class="hero-title">
+        The Complete Extension Directory for <span class="gradient-text">Tachiyomi & Mihon</span>
+      </h1>
+
+      <p class="hero-subtitle">
+        Curated high-performance extensions for Webtoons, Manhwa, Manga, and Anime. Includes working mirrors for Bato.to, MangaKakalot, Asura Scans, MangaDex, and more.
+      </p>
+
+      <!-- Quick Add Box -->
+      <div class="repo-box">
+        <div class="repo-box-input-group">
+          <span class="repo-box-label">Repository URL</span>
+          <input type="text" id="repoUrlInput" readonly value="https://raw.githubusercontent.com/03DxD12/tachiyomi-extensions/repo/index.min.json">
+        </div>
+        <button id="copyRepoBtn" class="btn btn-primary" title="Copy repository URL">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
+            <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
+          </svg>
+          Copy URL
+        </button>
+        <a id="deepLinkBtn" href="tachiyomi://add-repo?url=https://raw.githubusercontent.com/03DxD12/tachiyomi-extensions/repo/index.min.json" class="btn btn-outline" title="Add directly to Tachiyomi or Mihon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 5v14"></path>
+            <path d="M5 12h14"></path>
+          </svg>
+          Add to App
+        </a>
+      </div>
+
+      <!-- Quick Stats -->
+      <div class="hero-stats">
+        <div class="stat-item">
+          <span class="stat-number" id="statCount">--</span>
+          <span class="stat-label">Extensions</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <span class="stat-number">100%</span>
+          <span class="stat-label">Ad-Free & Direct</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <span class="stat-number">Automated</span>
+          <span class="stat-label">CI Builds & Signed</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Directory Section -->
+  <main class="directory-section">
+    <div class="directory-container">
+      <!-- Search & Filters Toolbar -->
+      <div class="toolbar">
+        <div class="search-box">
+          <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.3-4.3"></path>
+          </svg>
+          <input type="text" id="searchInput" placeholder="Search extensions by name, package, or source..." autocomplete="off">
+          <button id="clearSearchBtn" class="clear-btn" style="display: none;" title="Clear search">&times;</button>
+          <span class="search-shortcut">/</span>
+        </div>
+
+        <div class="filter-group">
+          <div class="filter-tabs" id="categoryTabs">
+            <button class="filter-tab active" data-filter="all">All</button>
+            <button class="filter-tab" data-filter="en">English</button>
+            <button class="filter-tab" data-filter="nsfw">18+ NSFW</button>
+            <button class="filter-tab" data-filter="safe">Safe</button>
+          </div>
+
+          <div class="sort-wrapper">
+            <select id="sortSelect" class="sort-select">
+              <option value="name-asc">Name (A-Z)</option>
+              <option value="name-desc">Name (Z-A)</option>
+              <option value="version">Version</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Extensions Count & State -->
+      <div class="results-info">
+        <span id="resultsCount">Loading extensions...</span>
+      </div>
+
+      <!-- Extensions Grid -->
+      <div class="extensions-grid" id="extensionsGrid">
+        <!-- Rendered dynamically by app.js -->
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+      </div>
+
+      <!-- Empty State -->
+      <div class="empty-state" id="emptyState" style="display: none;">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="11" cy="11" r="8"></circle>
+          <path d="m21 21-4.3-4.3"></path>
+          <path d="m9 9 4 4"></path>
+          <path d="m13 9-4 4"></path>
+        </svg>
+        <h3>No extensions found</h3>
+        <p>Try searching with another keyword or resetting the category filter.</p>
+        <button id="resetFiltersBtn" class="btn btn-secondary">Reset Filters</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Guide Modal -->
+  <div class="modal-backdrop" id="guideModal" style="display: none;">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h2>How to Add this Repository</h2>
+        <button class="modal-close-btn" id="closeModalBtn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="step-card">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h4>Copy Repository URL</h4>
+            <p>Copy the following link to your clipboard:</p>
+            <div class="code-box">
+              <code>https://raw.githubusercontent.com/03DxD12/tachiyomi-extensions/repo/index.min.json</code>
+            </div>
+          </div>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h4>Open Extension Repositories in App</h4>
+            <p>In <strong>Tachiyomi</strong> or <strong>Mihon</strong>, navigate to:</p>
+            <p class="step-path"><strong>More</strong> &rarr; <strong>Settings</strong> &rarr; <strong>Browse</strong> &rarr; <strong>Extension repos</strong></p>
+          </div>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <h4>Add and Refresh</h4>
+            <p>Tap <strong>Add repository</strong>, paste the copied URL, and tap <strong>Add</strong>.</p>
+            <p>Go to <strong>Browse &rarr; Extensions</strong> and pull down to refresh!</p>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="modalGotItBtn">Got It!</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast" id="toast">Copied to clipboard!</div>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="footer-container">
+      <p>
+        03DxD12 Legacy Tachiyomi Extension Repository. Built for comic, manga, and manhwa lovers.
+      </p>
+      <div class="footer-links">
+        <a href="https://github.com/03DxD12/tachiyomi-extensions" target="_blank" rel="noopener noreferrer">GitHub Source</a>
+        <a href="https://raw.githubusercontent.com/03DxD12/tachiyomi-extensions/repo/index.min.json" target="_blank" rel="noopener noreferrer">index.min.json</a>
+        <a href="https://raw.githubusercontent.com/03DxD12/tachiyomi-extensions/repo/index.json" target="_blank" rel="noopener noreferrer">index.json</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
