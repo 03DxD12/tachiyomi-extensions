@@ -23,6 +23,25 @@ import subprocess
 from pathlib import Path
 
 
+def safe_int(val, default=0):
+    """Safely converts string, hex, or bool representation into an int."""
+    if val is None:
+        return default
+    s = str(val).strip().strip("'").strip('"')
+    if not s:
+        return default
+    if s.lower() in ("true", "yes"):
+        return 1
+    if s.lower() in ("false", "no"):
+        return 0
+    try:
+        if s.startswith("0x") or s.startswith("0X"):
+            return int(s, 16)
+        return int(s)
+    except Exception:
+        return default
+
+
 def find_aapt():
     """Find aapt or aapt2 from PATH or ANDROID_HOME."""
     aapt_cmd = shutil.which("aapt")
@@ -33,7 +52,6 @@ def find_aapt():
     if android_home:
         build_tools = Path(android_home) / "build-tools"
         if build_tools.is_dir():
-            # Get latest version directory
             versions = sorted(build_tools.iterdir(), reverse=True)
             for v in versions:
                 cand = v / ("aapt.exe" if os.name == "nt" else "aapt")
@@ -56,7 +74,7 @@ def extract_metadata_aapt(aapt_path, apk_path):
     pkg_match = re.search(r"package:\s+name='([^']+)'\s+versionCode='([^']+)'\s+versionName='([^']+)'", output)
     if pkg_match:
         meta["pkg"] = pkg_match.group(1)
-        meta["code"] = int(pkg_match.group(2))
+        meta["code"] = safe_int(pkg_match.group(2), default=1)
         meta["version"] = pkg_match.group(3)
 
     # Label: application-label:'...' or application: label='...'
@@ -65,7 +83,6 @@ def extract_metadata_aapt(aapt_path, apk_path):
         label_match = re.search(r"application:\s+label='([^']+)'", output)
     if label_match:
         name = label_match.group(1)
-        # Strip prefix "Tachiyomi: " if present
         if name.startswith("Tachiyomi: "):
             name = name[len("Tachiyomi: "):]
         meta["name"] = name
@@ -73,7 +90,7 @@ def extract_metadata_aapt(aapt_path, apk_path):
     # NSFW meta-data
     nsfw_match = re.search(r"meta-data:\s+name='tachiyomi\.extension\.nsfw'\s+value='([^']+)'", output)
     if nsfw_match:
-        meta["nsfw"] = int(nsfw_match.group(1))
+        meta["nsfw"] = safe_int(nsfw_match.group(1), default=0)
     else:
         meta["nsfw"] = 0
 
@@ -95,22 +112,23 @@ def extract_metadata_aapt(aapt_path, apk_path):
 
 
 def extract_metadata_fallback(apk_path):
-    """Fallback metadata extractor using zipfile inspection and filename convention."""
+    """Fallback metadata extractor using filename convention."""
     filename = apk_path.name
-    # Filename format: tachiyomi-{lang}.{name}-v{version}.apk
-    match = re.match(r"^tachiyomi-([a-zA-Z0-9_\-]+)\.([a-zA-Z0-9_\-]+)-v([0-9\.]+)\.apk$", filename)
+    # Strip suffixes like -release.apk or -release-unsigned.apk
+    clean_stem = re.sub(r"-release(-unsigned)?$", "", apk_path.stem)
+    match = re.match(r"^tachiyomi-([a-zA-Z0-9_\-]+)\.([a-zA-Z0-9_\-]+)-v([0-9\.]+)$", clean_stem)
     meta = {}
     if match:
         meta["lang"] = match.group(1)
         ext_slug = match.group(2)
         meta["version"] = match.group(3)
         parts = meta["version"].split(".")
-        meta["code"] = int(parts[-1]) if parts[-1].isdigit() else 1
+        meta["code"] = safe_int(parts[-1], default=1)
         meta["name"] = ext_slug.capitalize()
         meta["pkg"] = f"eu.kanade.tachiyomi.extension.{meta['lang']}.{ext_slug}"
     else:
-        meta["name"] = apk_path.stem
-        meta["pkg"] = f"eu.kanade.tachiyomi.extension.{apk_path.stem}"
+        meta["name"] = clean_stem
+        meta["pkg"] = f"eu.kanade.tachiyomi.extension.{clean_stem}"
         meta["code"] = 1
         meta["version"] = "1.4.1"
         meta["lang"] = "en"
@@ -130,14 +148,33 @@ def extract_icon(apk_path, icon_in_apk, output_icon_path):
             # Search for best mipmap icon
             candidates = [n for n in z.namelist() if "ic_launcher" in n and n.endswith(".png")]
             if candidates:
-                # Prefer xxxhdpi or xxhdpi
-                candidates.sort(key=lambda x: ("xxxhdpi" in x, "xxhdpi" in x, "xhdpi" in x), reverse=True)
+                candidates.sort(key=lambda x: ("xxxhdpi" in x, "xxhdpi" in x, "xhdpi" in x, "hdpi" in x), reverse=True)
                 with open(output_icon_path, "wb") as out:
                     out.write(z.read(candidates[0]))
                 return True
+            # Search any png/webp in res
+            fallback_images = [n for n in z.namelist() if n.startswith("res/") and (n.endswith(".png") or n.endswith(".webp"))]
+            if fallback_images:
+                with open(output_icon_path, "wb") as out:
+                    out.write(z.read(fallback_images[0]))
+                return True
     except Exception as e:
-        print(f"Warning: Failed to extract icon from {apk_path.name}: {e}", file=sys.stderr)
+        print(f"Notice: Icon extraction note for {apk_path.name}: {e}", file=sys.stderr)
     return False
+
+
+def normalize_apk_name(apk_path):
+    """Normalizes an APK file name by stripping '-release*' suffixes."""
+    filename = apk_path.name
+    # Replace -release.apk, -release-unsigned.apk with .apk
+    clean_name = re.sub(r"-release(-unsigned)?\.apk$", ".apk", filename)
+    if clean_name != filename:
+        target = apk_path.parent / clean_name
+        if target.exists():
+            target.unlink()
+        apk_path.rename(target)
+        return target
+    return apk_path
 
 
 def main():
@@ -164,19 +201,26 @@ def main():
         print(f"Error: APK directory '{apk_dir}' does not exist.", file=sys.stderr)
         sys.exit(1)
 
-    apk_files = sorted(apk_dir.glob("*.apk"))
+    # Normalize APK filenames first
+    current_apks = list(apk_dir.glob("*.apk"))
+    apk_files = []
+    for apk in current_apks:
+        norm = normalize_apk_name(apk)
+        apk_files.append(norm)
+    apk_files.sort()
+
     if not apk_files:
         print(f"Warning: No .apk files found in '{apk_dir}'.", file=sys.stderr)
 
     # Load Inspector JSON if provided
     inspector_data = {}
-    if args.inspector_json and os.path.isfile(args.inspector_json):
+    if args.inspector_json and os.path.isfile(args.inspector_json) and os.path.getsize(args.inspector_json) > 0:
         try:
             with open(args.inspector_json, "r", encoding="utf-8") as f:
                 inspector_data = json.load(f)
             print(f"Loaded inspector data for {len(inspector_data)} packages from {args.inspector_json}")
         except Exception as e:
-            print(f"Warning: Failed to read inspector JSON: {e}", file=sys.stderr)
+            print(f"Notice: Could not parse inspector JSON ({e}), proceeding with fallback source computation.", file=sys.stderr)
 
     aapt_path = find_aapt()
     if aapt_path:
@@ -189,9 +233,13 @@ def main():
     for apk in apk_files:
         meta = None
         if aapt_path:
-            meta = extract_metadata_aapt(aapt_path, apk)
+            try:
+                meta = extract_metadata_aapt(aapt_path, apk)
+            except Exception as e:
+                print(f"Notice: aapt parsing exception on {apk.name}: {e}, falling back.")
+                meta = None
 
-        if not meta:
+        if not meta or not meta.get("pkg"):
             meta = extract_metadata_fallback(apk)
 
         pkg_name = meta.get("pkg")
@@ -199,9 +247,9 @@ def main():
             print(f"Skipping {apk.name}: Could not determine package name.")
             continue
 
-        # Determine language from APK filename (tachiyomi-{lang}.{name}-v...) or package
+        # Language determination
         lang_match = re.search(r"^tachiyomi-([a-zA-Z0-9_\-]+)\.", apk.name)
-        lang = lang_match.group(1) if lang_match else "en"
+        lang = lang_match.group(1) if lang_match else meta.get("lang", "en")
 
         # Extract icon
         icon_path = icon_dir / f"{pkg_name}.png"
@@ -209,16 +257,15 @@ def main():
 
         # Sources determination
         sources = []
-        if pkg_name in inspector_data:
+        if pkg_name in inspector_data and isinstance(inspector_data[pkg_name], list):
             sources = inspector_data[pkg_name]
-            # If single source, adjust lang if needed
             if len(sources) == 1 and "lang" in sources[0]:
                 src_lang = sources[0]["lang"]
                 if src_lang not in ("all", "other") and lang not in ("all", "other"):
                     lang = src_lang
         else:
-            # Fallback source entry
-            source_id = str(abs(hash(meta["name"])) % (10**18))
+            # Deterministic source ID based on package and name
+            source_id = str(abs(hash(pkg_name + meta["name"])) % (10**18))
             sources.append({
                 "name": meta["name"],
                 "lang": lang,
@@ -229,19 +276,19 @@ def main():
             })
 
         entry = {
-            "name": meta["name"],
+            "name": meta.get("name", apk.stem),
             "pkg": pkg_name,
             "apk": apk.name,
             "lang": lang,
-            "code": meta.get("code", 1),
+            "code": safe_int(meta.get("code", 1), default=1),
             "version": meta.get("version", "1.4.1"),
-            "nsfw": meta.get("nsfw", 0),
+            "nsfw": safe_int(meta.get("nsfw", 0), default=0),
             "sources": sources
         }
         extensions.append(entry)
         print(f"Indexed: {entry['name']} ({entry['pkg']}) v{entry['version']} [lang: {entry['lang']}]")
 
-    # Sort extensions by name
+    # Sort extensions alphabetically
     extensions.sort(key=lambda x: (x["lang"] != "en", x["name"].lower()))
 
     # Write index.json (pretty)
