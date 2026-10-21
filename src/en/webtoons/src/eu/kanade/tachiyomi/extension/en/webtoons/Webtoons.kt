@@ -9,8 +9,6 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.Cookie
-import okhttp3.CookieJar
 import okhttp3.Headers
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -44,26 +42,20 @@ class Webtoons : ParsedHttpSource() {
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
         .addInterceptor { chain ->
+            val req = chain.request()
+            val newReq = if (req.url.host.contains("webtoons.com")) {
+                req.newBuilder()
+                    .header("Cookie", "ageGatePass=true; locale=en; needGDPR=false")
+                    .build()
+            } else {
+                req
+            }
             try {
-                chain.proceed(chain.request())
+                chain.proceed(newReq)
             } catch (e: SocketException) {
-                chain.proceed(chain.request())
+                chain.proceed(newReq)
             }
         }
-        .cookieJar(object : CookieJar {
-            override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {}
-            override fun loadForRequest(url: HttpUrl): List<Cookie> {
-                return if (url.host.contains("webtoons.com")) {
-                    listOf(
-                        Cookie.Builder().domain("webtoons.com").name("ageGatePass").value("true").build(),
-                        Cookie.Builder().domain("webtoons.com").name("locale").value("en").build(),
-                        Cookie.Builder().domain("webtoons.com").name("needGDPR").value("false").build(),
-                    )
-                } else {
-                    emptyList()
-                }
-            }
-        })
         .build()
 
     override fun headersBuilder(): Headers.Builder = super.headersBuilder()
