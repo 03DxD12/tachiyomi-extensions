@@ -2,7 +2,7 @@ ext {
     extName = 'MangaKakalot'
     pkgNameSuffix = 'en.mangakakalot'
     extClass = '.Mangakakalot'
-    extVersionCode = 15
+    extVersionCode = 16
     libVersion = '1.4'
     isNsfw = false
 }

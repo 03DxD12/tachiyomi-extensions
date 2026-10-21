@@ -79,8 +79,8 @@ jobs:
       - name: Inspect APKs with Inspector
         continue-on-error: true
         run: |
-          echo "Downloading Tachiyomi Inspector..."
-          INSPECTOR_URL="$(curl -s https://api.github.com/repos/tachiyomiorg/tachiyomi-extensions-inspector/releases/latest | grep "browser_download_url" | cut -d '"' -f 4 | head -n 1)"
+          echo "Downloading Tachiyomi Inspector from Keiyoushi..."
+          INSPECTOR_URL="$(curl -s https://api.github.com/repos/keiyoushi/extensions-inspector/releases/latest | grep "browser_download_url" | cut -d '"' -f 4 | head -n 1)"
           if [ -n "$INSPECTOR_URL" ]; then
             curl -L -o Inspector.jar "$INSPECTOR_URL"
             java -jar Inspector.jar repo/apk output.json tmp || true

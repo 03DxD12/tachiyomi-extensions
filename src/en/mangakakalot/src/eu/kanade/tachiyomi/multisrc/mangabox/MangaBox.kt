@@ -61,10 +61,20 @@ abstract class MangaBox(
     protected fun mangaFromElement(element: Element, urlSelector: String = "h3 a"): SManga {
         return SManga.create().apply {
             element.select(urlSelector).first()!!.let {
-                url = it.attr("abs:href").substringAfter(baseUrl) // intentionally not using setUrlWithoutDomain
+                val fullUrl = it.attr("abs:href")
+                url = fullUrl.substringAfter(baseUrl).let { rel ->
+                    if (rel.startsWith("http")) {
+                        fullUrl.toHttpUrlOrNull()?.encodedPath ?: rel
+                    } else {
+                        rel
+                    }
+                }
                 title = it.text()
             }
-            thumbnail_url = element.select("img").first()!!.attr("abs:src")
+            thumbnail_url = element.select("img").first()?.let {
+                val dataSrc = it.attr("abs:data-src")
+                if (dataSrc.isNotBlank()) dataSrc else it.attr("abs:src")
+            }
         }
     }
 
@@ -125,7 +135,7 @@ abstract class MangaBox(
 
     open val mangaDetailsMainSelector = "div.manga-info-top, div.panel-story-info"
 
-    open val thumbnailSelector = "div.manga-info-pic img, span.info-image img"
+    open val thumbnailSelector = "div.manga-info-pic img, span.info-image img, div.manga-info-top img"
 
     open val descriptionSelector = "div#noidungm, div#panel-story-info-description"
 
@@ -156,7 +166,10 @@ abstract class MangaBox(
                 ?.replace("""^$title summary:\s""".toRegex(), "")
                 ?.replace("""<\s*br\s*/?>""".toRegex(), "\n")
                 ?.replace("<[^>]*>".toRegex(), "")
-            thumbnail_url = document.select(thumbnailSelector).attr("abs:src")
+            thumbnail_url = document.select(thumbnailSelector).firstOrNull()?.let {
+                val dataSrc = it.attr("abs:data-src")
+                if (dataSrc.isNotBlank()) dataSrc else it.attr("abs:src")
+            }
 
             // add alternative name to manga description
             document.select(altNameSelector).firstOrNull()?.ownText()?.let {
@@ -207,12 +220,19 @@ abstract class MangaBox(
     override fun chapterFromElement(element: Element): SChapter {
         return SChapter.create().apply {
             element.select("a").let {
-                url = it.attr("abs:href").substringAfter(baseUrl) // intentionally not using setUrlWithoutDomain
+                val fullUrl = it.attr("abs:href")
+                url = fullUrl.substringAfter(baseUrl).let { rel ->
+                    if (rel.startsWith("http")) {
+                        fullUrl.toHttpUrlOrNull()?.encodedPath ?: rel
+                    } else {
+                        rel
+                    }
+                }
                 name = it.text()
                 scanlator =
-                    it.attr("abs:href").toHttpUrlOrNull()!!.host // show where chapters are actually from
+                    it.attr("abs:href").toHttpUrlOrNull()?.host // show where chapters are actually from
             }
-            date_upload = parseChapterDate(element.selectDateFromElement().text(), scanlator!!) ?: 0
+            date_upload = parseChapterDate(element.selectDateFromElement().text(), scanlator ?: "") ?: 0
         }
     }
 

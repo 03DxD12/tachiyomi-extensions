@@ -12,3 +12,6 @@ output.json
 Inspector.jar
 tmp/
 repo/
+__pycache__/
+*.pyc
+

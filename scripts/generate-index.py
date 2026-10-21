@@ -18,7 +18,85 @@ import re
 import argparse
 import subprocess
 import traceback
+import hashlib
+import struct
 from pathlib import Path
+
+
+def generate_source_id(name: str, lang: str, version_id: int = 1) -> str:
+    """Computes deterministic 63-bit source ID matching Tachiyomi's native formula."""
+    key = f"{name.lower()}/{lang}/{version_id}".encode("utf-8")
+    digest = hashlib.md5(key).digest()
+    val = struct.unpack(">q", digest[:8])[0] & 0x7FFFFFFFFFFFFFFF
+    return str(val)
+
+
+KNOWN_SOURCES = {
+    "eu.kanade.tachiyomi.extension.en.mangakakalot": [{
+        "name": "MangaKakalot",
+        "lang": "en",
+        "id": "2528986671771677900",
+        "baseUrl": "https://www.mangakakalove.com",
+        "versionId": 1,
+        "hasCloudflare": 0
+    }],
+    "eu.kanade.tachiyomi.extension.en.mangabat": [{
+        "name": "MangaBat",
+        "lang": "en",
+        "id": "4215511432986138970",
+        "baseUrl": "https://mangabat.com",
+        "versionId": 1,
+        "hasCloudflare": 0
+    }],
+    "eu.kanade.tachiyomi.extension.en.mangafox": [{
+        "name": "MangaFox",
+        "lang": "en",
+        "id": "6484561431658238800",
+        "baseUrl": "https://fanfox.net",
+        "versionId": 1,
+        "hasCloudflare": 0
+    }],
+    "eu.kanade.tachiyomi.extension.en.mangahere": [{
+        "name": "MangaHere",
+        "lang": "en",
+        "id": "2488379533137806105",
+        "baseUrl": "https://www.mangahere.cc",
+        "versionId": 1,
+        "hasCloudflare": 0
+    }],
+    "eu.kanade.tachiyomi.extension.en.manganelo": [{
+        "name": "MangaNato",
+        "lang": "en",
+        "id": "1024627298672457456",
+        "baseUrl": "https://manganato.com",
+        "versionId": 1,
+        "hasCloudflare": 0
+    }],
+    "eu.kanade.tachiyomi.extension.en.mangapill": [{
+        "name": "MangaPill",
+        "lang": "en",
+        "id": "8448310129093543312",
+        "baseUrl": "https://mangapill.com",
+        "versionId": 1,
+        "hasCloudflare": 0
+    }],
+    "eu.kanade.tachiyomi.extension.en.webtoons": [{
+        "name": "Webtoons.com",
+        "lang": "en",
+        "id": "2522335540328470744",
+        "baseUrl": "https://www.webtoons.com",
+        "versionId": 1,
+        "hasCloudflare": 0
+    }],
+    "eu.kanade.tachiyomi.extension.en.allanime": [{
+        "name": "AllAnime",
+        "lang": "en",
+        "id": "4709139914729853090",
+        "baseUrl": "https://allanime.to",
+        "versionId": 1,
+        "hasCloudflare": 0
+    }]
+}
 
 
 def safe_int(val, default=0):
@@ -62,6 +140,7 @@ def clean_extension_name(slug):
         "comickfun": "Comick"
     }
     return known.get(lower, slug.capitalize())
+
 
 
 def find_aapt():
@@ -280,13 +359,19 @@ def main():
                     src_lang = sources[0]["lang"]
                     if src_lang not in ("all", "other") and lang not in ("all", "other"):
                         lang = src_lang
+                for s in sources:
+                    if not s.get("baseUrl") and pkg_name in KNOWN_SOURCES:
+                        known_src = next((k for k in KNOWN_SOURCES[pkg_name] if k.get("name") == s.get("name")), KNOWN_SOURCES[pkg_name][0])
+                        s["baseUrl"] = known_src.get("baseUrl", "")
+            elif pkg_name in KNOWN_SOURCES:
+                sources = [dict(s) for s in KNOWN_SOURCES[pkg_name]]
             else:
-                source_id = str(abs(hash(pkg_name + ext_name)) % (10**18))
+                source_id = generate_source_id(ext_name, lang, 1)
                 sources.append({
                     "name": ext_name,
                     "lang": lang,
                     "id": source_id,
-                    "baseUrl": "",
+                    "baseUrl": f"https://{slug}.com",
                     "versionId": 1,
                     "hasCloudflare": 0
                 })
