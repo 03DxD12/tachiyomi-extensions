@@ -11,8 +11,8 @@
       {
         "name": "AllAnime",
         "lang": "en",
-        "id": "742353743751785162",
-        "baseUrl": "",
+        "id": "4709139914729853090",
+        "baseUrl": "https://allanime.to",
         "versionId": 1,
         "hasCloudflare": 0
       }
@@ -30,8 +30,8 @@
       {
         "name": "MangaBat",
         "lang": "en",
-        "id": "446167003603471495",
-        "baseUrl": "",
+        "id": "4215511432986138970",
+        "baseUrl": "https://mangabat.com",
         "versionId": 1,
         "hasCloudflare": 0
       }
@@ -49,8 +49,8 @@
       {
         "name": "MangaFox",
         "lang": "en",
-        "id": "241095969293587782",
-        "baseUrl": "",
+        "id": "6484561431658238800",
+        "baseUrl": "https://fanfox.net",
         "versionId": 1,
         "hasCloudflare": 0
       }
@@ -68,8 +68,8 @@
       {
         "name": "MangaHere",
         "lang": "en",
-        "id": "358384821782211120",
-        "baseUrl": "",
+        "id": "2488379533137806105",
+        "baseUrl": "https://www.mangahere.cc",
         "versionId": 1,
         "hasCloudflare": 0
       }
@@ -78,17 +78,17 @@
   {
     "name": "MangaKakalot",
     "pkg": "eu.kanade.tachiyomi.extension.en.mangakakalot",
-    "apk": "tachiyomi-en.mangakakalot-v1.4.15.apk",
+    "apk": "tachiyomi-en.mangakakalot-v1.4.16.apk",
     "lang": "en",
-    "code": 15,
-    "version": "1.4.15",
+    "code": 16,
+    "version": "1.4.16",
     "nsfw": 0,
     "sources": [
       {
         "name": "MangaKakalot",
         "lang": "en",
-        "id": "280515907601913548",
-        "baseUrl": "",
+        "id": "2528986671771677900",
+        "baseUrl": "https://www.mangakakalove.com",
         "versionId": 1,
         "hasCloudflare": 0
       }
@@ -106,8 +106,8 @@
       {
         "name": "MangaNato",
         "lang": "en",
-        "id": "412753903205830412",
-        "baseUrl": "",
+        "id": "1024627298672457456",
+        "baseUrl": "https://manganato.com",
         "versionId": 1,
         "hasCloudflare": 0
       }
@@ -125,8 +125,8 @@
       {
         "name": "MangaPill",
         "lang": "en",
-        "id": "40801676274930377",
-        "baseUrl": "",
+        "id": "8448310129093543312",
+        "baseUrl": "https://mangapill.com",
         "versionId": 1,
         "hasCloudflare": 0
       }
@@ -144,8 +144,8 @@
       {
         "name": "Webtoons.com",
         "lang": "en",
-        "id": "697237189334997148",
-        "baseUrl": "",
+        "id": "2522335540328470744",
+        "baseUrl": "https://www.webtoons.com",
         "versionId": 1,
         "hasCloudflare": 0
       }
