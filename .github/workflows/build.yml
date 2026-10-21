@@ -1,0 +1,111 @@
+name: Build and Publish Extensions
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
+      - '.gitignore'
+      - 'LICENSE'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build Extensions & Publish Repo
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: temurin
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Prepare Keystore for Release
+        run: |
+          if [ -n "${{ secrets.SIGNING_KEY }}" ]; then
+            echo "Using repository signing key secret..."
+            echo "${{ secrets.SIGNING_KEY }}" | base64 -d > signingkey.jks
+          else
+            echo "No signing key secret detected. Generating default release keystore..."
+            keytool -genkeypair -v -keystore signingkey.jks \
+              -alias tachiyomi -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass tachiyomi -keypass tachiyomi \
+              -dname "CN=03DxD12, OU=Tachiyomi, O=03DxD12, L=Global, S=Global, C=US"
+          fi
+
+      - name: Build Extension APKs
+        env:
+          KEY_STORE_PASSWORD: ${{ secrets.KEY_STORE_PASSWORD || 'tachiyomi' }}
+          ALIAS: ${{ secrets.ALIAS || 'tachiyomi' }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || 'tachiyomi' }}
+        run: |
+          ./gradlew assembleRelease --stacktrace
+
+      - name: Collect APK Files
+        run: |
+          mkdir -p repo/apk
+          mkdir -p repo/icon
+          find src -name "*.apk" -type f -exec cp -v {} repo/apk/ \; || true
+          echo "Found APKs:"
+          ls -la repo/apk/
+
+      - name: Inspect APKs with Inspector
+        continue-on-error: true
+        run: |
+          echo "Downloading Tachiyomi Inspector..."
+          INSPECTOR_URL="$(curl -s https://api.github.com/repos/tachiyomiorg/tachiyomi-extensions-inspector/releases/latest | grep "browser_download_url" | cut -d '"' -f 4 | head -n 1)"
+          if [ -n "$INSPECTOR_URL" ]; then
+            curl -L -o Inspector.jar "$INSPECTOR_URL"
+            java -jar Inspector.jar repo/apk output.json tmp || true
+          fi
+
+      - name: Generate Repository Indexes (index.json, index.min.json, repo.json)
+        run: |
+          python scripts/generate-index.py \
+            --apk-dir repo/apk \
+            --output-dir repo \
+            --icon-dir repo/icon \
+            --inspector-json output.json \
+            --repo-name "03DxD12 Legacy Tachiyomi Extensions" \
+            --repo-short-name "03DxD12" \
+            --repo-website "https://github.com/03DxD12/tachiyomi-extensions"
+
+      - name: Validate Generated Metadata
+        run: |
+          echo "=== index.min.json preview ==="
+          cat repo/index.min.json
+          echo ""
+          python -c "import json; data=json.load(open('repo/index.min.json')); print(f'Successfully validated {len(data)} extensions in index.min.json')"
+
+      - name: Deploy to 'repo' Branch
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: repo
+          folder: repo
+          clean: true
+          commit-message: "Automated repo update [skip ci]"

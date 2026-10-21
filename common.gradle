@@ -1,0 +1,101 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlinx-serialization'
+apply plugin: 'org.jmailen.kotlinter'
+
+android {
+    compileSdkVersion 34
+
+    namespace "eu.kanade.tachiyomi.extension"
+
+    sourceSets {
+        main {
+            manifest.srcFile "AndroidManifest.xml"
+            java.srcDirs = ['src']
+            res.srcDirs = ['res']
+            assets.srcDirs = ['assets']
+        }
+        release {
+            manifest.srcFile "AndroidManifest.xml"
+        }
+        debug {
+            manifest.srcFile "AndroidManifest.xml"
+        }
+    }
+
+    defaultConfig {
+        minSdkVersion 21
+        targetSdkVersion 34
+        applicationIdSuffix pkgNameSuffix
+        versionCode Integer.parseInt(extVersionCode.toString())
+
+        def currentLibVersion = project.hasProperty("libVersion") ? project.property("libVersion") : "1.4"
+        versionName "$currentLibVersion.$extVersionCode"
+        setProperty("archivesBaseName", "tachiyomi-$pkgNameSuffix-v$versionName")
+
+        def hasReadmeFile = new File(project.projectDir, "README.md").exists()
+        def hasChangelogFile = new File(project.projectDir, "CHANGELOG.md").exists()
+        def isNsfwExt = project.hasProperty("isNsfw") && (project.property("isNsfw").toString().toLowerCase() in ["true", "1"])
+
+        manifestPlaceholders = [
+            appName     : "Tachiyomi: $extName",
+            extClass    : project.hasProperty("extClass") ? project.property("extClass") : "",
+            extFactory  : project.hasProperty("extFactory") ? project.property("extFactory") : "",
+            nsfw        : isNsfwExt ? 1 : 0,
+            hasReadme   : hasReadmeFile ? 1 : 0,
+            hasChangelog: hasChangelogFile ? 1 : 0,
+        ]
+    }
+
+    signingConfigs {
+        release {
+            def keystore = rootProject.file("signingkey.jks")
+            if (keystore.exists()) {
+                storeFile keystore
+                storePassword System.getenv("KEY_STORE_PASSWORD") ?: "tachiyomi"
+                keyAlias System.getenv("ALIAS") ?: "tachiyomi"
+                keyPassword System.getenv("KEY_PASSWORD") ?: "tachiyomi"
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+            minifyEnabled false
+        }
+        debug {
+            minifyEnabled false
+        }
+    }
+
+    dependenciesInfo {
+        includeInApk = false
+    }
+
+    buildFeatures {
+        aidl false
+        renderScript false
+        resValues false
+        shaders false
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_1_8.toString()
+        freeCompilerArgs += "-opt-in=kotlinx.serialization.ExperimentalSerializationApi"
+    }
+
+    kotlinter {
+        ignoreFailures = true
+    }
+}
+
+dependencies {
+    implementation(project(":core"))
+    compileOnly(libs.bundles.common)
+}
