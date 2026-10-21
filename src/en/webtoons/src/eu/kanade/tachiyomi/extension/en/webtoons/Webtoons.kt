@@ -177,7 +177,7 @@ class Webtoons : ParsedHttpSource() {
             }
     }
 
-    private fun chapterListParse(response: Response): List<SChapter> {
+    override fun chapterListParse(response: Response): List<SChapter> {
         val json = JSONObject(response.body?.string().orEmpty())
         val result = json.optJSONObject("result") ?: return emptyList()
         val episodes = result.optJSONArray("episodeList") ?: return emptyList()
