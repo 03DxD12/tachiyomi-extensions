@@ -1,0 +1,10 @@
+ext {
+    extName = 'Bato.to'
+    pkgNameSuffix = 'en.batoto'
+    extClass = '.BatoTo'
+    extVersionCode = 1
+    libVersion = '1.4'
+    isNsfw = false
+}
+
+apply from: "$rootDir/common.gradle"

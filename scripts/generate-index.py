@@ -95,8 +95,17 @@ KNOWN_SOURCES = {
         "baseUrl": "https://allanime.to",
         "versionId": 1,
         "hasCloudflare": 0
+    }],
+    "eu.kanade.tachiyomi.extension.en.batoto": [{
+        "name": "Bato.to",
+        "lang": "en",
+        "id": "7890050626002177109",
+        "baseUrl": "https://bato1.com",
+        "versionId": 1,
+        "hasCloudflare": 0
     }]
 }
+
 
 
 def safe_int(val, default=0):
